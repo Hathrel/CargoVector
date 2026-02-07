@@ -111,20 +111,20 @@ namespace IngameScript
 // Useful for intuition, not for envelope protection.
 //
 // BRAKEDIST - [BRAKEDIST]
-// Displays braking feasibility relative to the current deck logic.
+// Displays how many meters you can continue descending before you must
+// begin braking to stop above the OPERATIONS deck (twrLimit).
 //
 // Possible outputs include:
-// • "BRAKE ALT: OK"
-// • "BRAKE ALT: WARNING"
+// • "Brake in: N m"
+// • "BRAKE NOW" (within brakeNowMarginMeters)
 // • "BRAKE ALT: IMPOSSIBLE"
+// • "BRAKE ALT: N/A" (not in a gravity well)
 //
-// This is a *diagnostic* display and should not be used for control decisions.
+// This is a *maneuver timer* based on current vertical speed and thrust.
 //
 // ALTDIST - [ALTDIST]
-// Displays altitude difference (meters) between current position and the relevant
-// deck altitude.
-//
-// This is informational only and does not account for momentum or future authority loss.
+// Displays the OPERATIONS deck altitude (meters ASL) for the current ship and planet.
+// This is ruoghly the altitude where your ship hits the user-defined TWR limit.
 //
 // EARTHLIKE - [EARTHLIKE]
 // Displays true/false indicating whether the ship can hover on an Earth-like planet
@@ -204,6 +204,10 @@ public int updateSpeed = 4;
 // 3 = medium
 // 4 = slow
 // Anything else = run once, then stop unless triggered again
+
+public double brakeNowMarginMeters = 500.0;
+// BRAKE NOW display margin in meters.
+// If you want earlier warnings during fast descents, increase this value.
 
 const int RESCAN_INTERVAL = 1800;
 // How frequently the script scans for new screens.
@@ -575,7 +579,7 @@ public string GetDeckBrakeStatusLine()
 
     double brakeAlt;
 
-    if (!TryGetBrakeAltitudeToHardDeck(out brakeAlt))
+    if (!TryGetBrakeAltitudeToOpsDeck(out brakeAlt))
         return "BRAKE ALT: N/A";
 
     if (double.IsInfinity(brakeAlt))
@@ -583,7 +587,10 @@ public string GetDeckBrakeStatusLine()
 
     double metersToBrake = altNow - brakeAlt;
 
-    if (metersToBrake <= 0)
+    if (metersToBrake < 0)
+        return "BRAKE ALT: IMPOSSIBLE";
+
+    if (metersToBrake <= brakeNowMarginMeters)
         return "BRAKE NOW";
 
     return "Brake in: " + metersToBrake.ToString("0.0") + " m";
@@ -1064,24 +1071,21 @@ public bool TryGetAltitudeToGravity(double gTarget, out double altTarget)
     if (R < 1) return false;
 
     double gNow = c.GetNaturalGravity().Length();
-
-    double b = gNow;
-    if (b < 0.1) return false;
+    if (gNow < 0.1) return false;
 
     if (gTarget < G_EPS) return false;
 
     double MaxR = R * (1.0 + DEFAULT_HILL_FRACTION);
 
-    if (gTarget >= b)
-    {
-        altTarget = MaxR - R;
-        return true;
-    }
+    // Convert current gravity to an estimated "hill-top" gravity so the solve
+    // is stable as you move in the well (gNow changes with rNow).
+    double b = gNow * Math.Pow(rNow / MaxR, DEFAULT_FALLOFF);
 
     double ratio = b / gTarget;
     double rTarget = MaxR * Math.Pow(ratio, 1.0 / DEFAULT_FALLOFF);
 
     altTarget = rTarget - R;
+    if (altTarget < 0) altTarget = 0;
     return true;
 }
 
@@ -1201,6 +1205,25 @@ public double GetVerticalStopDistance()
     return (vDown * vDown) / (2.0 * aNet);
 }
 
+// Returns the vertical stopping distance (meters of altitude) required to null current
+// downward speed, assuming net acceleration is evaluated at the HARD DECK (TWR 1.1).
+//
+// This is a conservative estimate for braking feasibility against the hard deck.
+public double GetVerticalStopDistanceAtHardDeck()
+{
+    double vDown = GetDownSpeed();
+    if (vDown < 1e-3) return 0;
+
+    double fOverM = GetUpAccelThrustOnly();
+    if (fOverM <= 1e-6) return double.PositiveInfinity;
+
+    double gDeck = fOverM / HARD_DECK_TWR;
+    double aNetAtDeck = fOverM - gDeck; // net accel at hard deck
+
+    if (aNetAtDeck <= 1e-6) return double.PositiveInfinity;
+
+    return (vDown * vDown) / (2.0 * aNetAtDeck);
+}
 
 // Converts a TWR threshold into the gravity magnitude (m/s^2)
 // that corresponds to that TWR for the CURRENT ship.
@@ -1273,7 +1296,7 @@ public bool TryGetBrakeAltitudeToHardDeck(out double brakeAltASL)
     if (!TryGetHardDeckAltitude(out deckAlt))
         return false;
 
-    double stopDist = GetVerticalStopDistance();
+    double stopDist = GetVerticalStopDistanceAtHardDeck();
     if (double.IsInfinity(stopDist))
     {
         brakeAltASL = double.PositiveInfinity;
