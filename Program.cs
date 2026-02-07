@@ -37,11 +37,19 @@ namespace IngameScript
         //
         // CHANGELOG
         //
-        // 1/4/2025 - v1.1 - Added helper methods to correct theoretical hover feasibility on 
+        // 1/4/2025 - v1.1 
+        // - Added helper methods to correct theoretical hover feasibility on 
         // Pertram and Earthlike without actually needing to be in gravity.
         //
-        // 2/6/2026 - v1.2 - Adjusted BRAKEDIST and ALTDIST to act as predictive metrics rather
+        // 2/6/2026 - v1.2 
+        // - Adjusted BRAKEDIST and ALTDIST to act as predictive metrics rather
         // than informational only. This was their originally intended functionality.
+        //
+        // DATE_OF_RELEASE - v1.3
+        // - Fixed a bug with updateSpeed
+        // - Fixed a bug with Sound Delay on sound blocks. Should now only increase the rate
+        // in emergencies. Previously it was always in "High alert" mode and ignored user input.
+        //
         //
         // INTRODUCTION--------------------------------------------------------------------------
         // This script was designed primarily for logistics ships to determine if they're over
@@ -161,7 +169,7 @@ public string surfaceName = "Screen=";
 
 public double warningLightBlink = 2.0;
 // During certain emergency states, lights controlled by this script will begin blinking.
-// Set this to determine how rapidly they blink. The f is required, leave it.
+// Set this to determine how rapidly they blink.
 
 public const int SOUND_DELAY = 180;
 // Change this to increase or decrease the delay time between alarm sounds. Default is 180
@@ -259,9 +267,9 @@ public UpdateFrequency ParseFrequency()
     switch (updateSpeed)
     {
         case 1: return UpdateFrequency.None;
-        case 2: return UpdateFrequency.Update100;
+        case 2: return UpdateFrequency.Update1;
         case 3: return UpdateFrequency.Update10;
-        case 4: return UpdateFrequency.Update1;
+        case 4: return UpdateFrequency.Update100;
         default: return UpdateFrequency.Once;
     }
 }
@@ -299,7 +307,6 @@ public void Rescan()
 
             if (p is IMyTextSurface)
             {
-                // This surface IS the terminal block (LCD/etc.)
                 targetSurfaces.Add(new SurfaceTarget
                 {
                     Surface = (IMyTextSurface)p,
@@ -333,10 +340,8 @@ public void Rescan()
             if (s < 0 || s >= provider.SurfaceCount)
                 continue;
 
-            // Optional: keep old mapping (but note: key collisions if multiple blocks use Screen=1)
             providerScreens[screenIndex] = provider;
 
-            // CRITICAL: store the provider surface AND the terminal block that owns the CustomData template
             targetSurfaces.Add(new SurfaceTarget
             {
                 Surface = provider.GetSurface(s),
@@ -573,7 +578,6 @@ public string DisplayStoppingDistance()
 }
 
 // Handled
-// Display helpers. These are display-only, not physics primitives.
 public string GetDeckBrakeStatusLine()
 {
     double altNow;
@@ -788,7 +792,7 @@ public void ProcessAlarms()
             if ((MustBrakeSoonForHardDeck() && ShipDescending() && !AtOrBelowHardDeck()) ||
                 (AtOrBelowHardDeck() && ShipDescending()))
             {
-                AlarmSystemControl(alarm, true);
+                AlarmSystemControl(alarm);
             }
             else if (AtOrBelowHardDeck() && GetDeckBrakeStatusLine() == "BRAKE ALT: IMPOSSIBLE")
             {
