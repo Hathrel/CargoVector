@@ -40,8 +40,8 @@ namespace IngameScript
         // 1/4/2025 - v1.1 - Added helper methods to correct theoretical hover feasibility on 
         // Pertram and Earthlike without actually needing to be in gravity.
         //
-        // 2/6/2026 - v1.2 - Adjusted BRAKeDIST and ALTDIST to act as predictive metrics rather
-        // than informational only.
+        // 2/6/2026 - v1.2 - Adjusted BRAKEDIST and ALTDIST to act as predictive metrics rather
+        // than informational only. This was their originally intended functionality.
         //
         // INTRODUCTION--------------------------------------------------------------------------
         // This script was designed primarily for logistics ships to determine if they're over
