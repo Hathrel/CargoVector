@@ -33,119 +33,122 @@ namespace IngameScript
 {
     public partial class Program : MyGridProgram
     {
-// CARGO VECTOR 1.1
-//
-// CHANGELOG
-//
-// 1/4/2025 - v1.1 - Added helper methods to correct theoretical hover feasibility on 
-// Pertram and Earthlike without actually needing to be in gravity.
-//
-// INTRODUCTION--------------------------------------------------------------------------
-// This script was designed primarily for logistics ships to determine if they're over
-// filled, but can be used for any ship to determine if it is capable of going up and
-// down in the gravity well. 
-//
-// The panel portion is designed to be design friendly, so you
-// can plan out how you want your screen to look in the Custom Data of the panels you
-// use. This does necessarily mean that if another panel script doesn't just bowl over
-// the rest of the text on the screen or nuke Custom Data, they can both occupy the same 
-// screen, but this is rare.
-//
-// If you point it at an LCD/cockpit surface that another script also uses,
-// expect conflicts, as I can't control the behavior of their script, but this one
-// does not hog the entire surface.
-//
-//---------------------------------------------------------------------------------------
+        // CARGO VECTOR 1.2
+        //
+        // CHANGELOG
+        //
+        // 1/4/2025 - v1.1 - Added helper methods to correct theoretical hover feasibility on 
+        // Pertram and Earthlike without actually needing to be in gravity.
+        //
+        // 2/6/2026 - v1.2 - Adjusted BRAKeDIST and ALTDIST to act as predictive metrics rather
+        // than informational only.
+        //
+        // INTRODUCTION--------------------------------------------------------------------------
+        // This script was designed primarily for logistics ships to determine if they're over
+        // filled, but can be used for any ship to determine if it is capable of going up and
+        // down in the gravity well. 
+        //
+        // The panel portion is designed to be design friendly, so you
+        // can plan out how you want your screen to look in the Custom Data of the panels you
+        // use. This does necessarily mean that if another panel script doesn't just bowl over
+        // the rest of the text on the screen or nuke Custom Data, they can both occupy the same 
+        // screen, but this is rare.
+        //
+        // If you point it at an LCD/cockpit surface that another script also uses,
+        // expect conflicts, as I can't control the behavior of their script, but this one
+        // does not hog the entire surface.
+        //
+        //---------------------------------------------------------------------------------------
 
-// USER CONFIG---------------------------------------------------------------------------
-// This script is designed to be driven entirely by Custom Data.
-//
-// The goal: you can name blocks however you want; config lives in Custom Data.
-// --------------------------------------------------------------------------------------
+        // USER CONFIG---------------------------------------------------------------------------
+        // This script is designed to be driven entirely by Custom Data.
+        //
+        // The goal: you can name blocks however you want; config lives in Custom Data.
+        // --------------------------------------------------------------------------------------
 
-// --------------------------------------------------------------------------------------
-// PB ARGUMENTS
-// 1.) rescan - Type "rescan" in the arguments bar and click "Run" to immediately
-// populate newly added screens. This doesn't HAVE to be done. The script default
-// scans for new screens every ~30s.
-// 2.) speed - Type "speed" in the arguments bar and click "Run" to immediately
-// change the update speed to a new value. Run this if you've changed the
-// updateSpeed value.
-// --------------------------------------------------------------------------------------
+        // --------------------------------------------------------------------------------------
+        // PB ARGUMENTS
+        // 1.) rescan - Type "rescan" in the arguments bar and click "Run" to immediately
+        // populate newly added screens. This doesn't HAVE to be done. The script default
+        // scans for new screens every ~30s.
+        // 2.) speed - Type "speed" in the arguments bar and click "Run" to immediately
+        // change the update speed to a new value. Run this if you've changed the
+        // updateSpeed value.
+        // --------------------------------------------------------------------------------------
 
-// CUSTOMDATA ARGUMENTS------------------------------------------------------------------
-// 
-// Panel Arguments ----------------------------------------------------------------------
-//
-// TWR - [TWR]
-// Displays current Thrust-to-Weight Ratio as a double.
-// 
-// • TWR > 1.00  → Ship can climb.
-// • TWR = 1.00  → Neutral hover (no vertical authority).
-// • TWR < 1.00  → Ship will descend even at full thrust.
-//
-// This value is instantaneous and reflects current mass, gravity, and available thrust.
-//
-// --------------------------------------------------------------------------------------
-//
-// ACCEL - [ACCEL]
-// Displays NET vertical acceleration (m/s²) if full upward thrust is applied.
-//
-// • > 0  → You can arrest descent and climb.
-// • = 0  → Neutral hover.
-// • < 0  → You cannot stop falling; descent will accelerate.
-//
-// This is the *actual* braking capability metric.
-//
-// CANHOVER - [CANHOVER]
-// Displays true/false indicating whether TWR ≥ 1.00.
-//
-// This is a convenience flag only and is NOT predictive.
-// It does NOT indicate safe operation.
-//
-// STOPDIST - [STOPDIST]
-// Displays estimated stopping distance (meters) required to null current downward
-// velocity assuming full upward thrust.
-//
-// This value grows rapidly with speed and shrinking acceleration.
-// Useful for intuition, not for envelope protection.
-//
-// BRAKEDIST - [BRAKEDIST]
-// Displays how many meters you can continue descending before you must
-// begin braking to stop above the OPERATIONS deck (twrLimit).
-//
-// Possible outputs include:
-// • "Brake in: N m"
-// • "BRAKE NOW" (within brakeNowMarginMeters)
-// • "BRAKE ALT: IMPOSSIBLE"
-// • "BRAKE ALT: N/A" (not in a gravity well)
-//
-// This is a *maneuver timer* based on current vertical speed and thrust.
-//
-// ALTDIST - [ALTDIST]
-// Displays the OPERATIONS deck altitude (meters ASL) for the current ship and planet.
-// This is ruoghly the altitude where your ship hits the user-defined TWR limit.
-//
-// EARTHLIKE - [EARTHLIKE]
-// Displays true/false indicating whether the ship can hover on an Earth-like planet
-// (≈ 1.0g) at current mass and thrust.
-//
-// PERTRAM - [PERTRAM]
-// Displays true/false indicating whether the ship can hover on Pertram
-// (higher gravity than Earth-like).
-//
-// Light Arguments-----------------------------------------------------------------------
-//
-// ROTATING - [ROTATING]
-// Marks a lighting block as a rotating / beacon-style light.
-//
-// Rotating lights are excluded from standard warning color logic and remain red unless
-// explicitly overridden.
-//
-// --------------------------------------------------------------------------------------
+        // CUSTOMDATA ARGUMENTS------------------------------------------------------------------
+        // 
+        // Panel Arguments ----------------------------------------------------------------------
+        //
+        // TWR - [TWR]
+        // Displays current Thrust-to-Weight Ratio as a double.
+        // 
+        // • TWR > 1.00  → Ship can climb.
+        // • TWR = 1.00  → Neutral hover (no vertical authority).
+        // • TWR < 1.00  → Ship will descend even at full thrust.
+        //
+        // This value is instantaneous and reflects current mass, gravity, and available thrust.
+        //
+        // --------------------------------------------------------------------------------------
+        //
+        // ACCEL - [ACCEL]
+        // Displays NET vertical acceleration (m/s²) if full upward thrust is applied.
+        //
+        // • > 0  → You can arrest descent and climb.
+        // • = 0  → Neutral hover.
+        // • < 0  → You cannot stop falling; descent will accelerate.
+        //
+        // This is the *actual* braking capability metric.
+        //
+        // CANHOVER - [CANHOVER]
+        // Displays true/false indicating whether TWR ≥ 1.00.
+        //
+        // This is a convenience flag only and is NOT predictive.
+        // It does NOT indicate safe operation.
+        //
+        // STOPDIST - [STOPDIST]
+        // Displays estimated stopping distance (meters) required to null current downward
+        // velocity assuming full upward thrust.
+        //
+        // This value grows rapidly with speed and shrinking acceleration.
+        // Useful for intuition, not for envelope protection.
+        //
+        // BRAKEDIST - [BRAKEDIST]
+        // Displays how many meters you can continue descending before you must
+        // begin braking to stop above the OPERATIONS deck (twrLimit).
+        //
+        // Possible outputs include:
+        // • "Brake in: N m"
+        // • "BRAKE NOW" (within brakeNowMarginMeters)
+        // • "BRAKE ALT: IMPOSSIBLE"
+        // • "BRAKE ALT: N/A" (not in a gravity well)
+        //
+        // This is a *maneuver timer* based on current vertical speed and thrust.
+        //
+        // ALTDIST - [ALTDIST]
+        // Displays the OPERATIONS deck altitude (meters ASL) for the current ship and planet.
+        // This is ruoghly the altitude where your ship hits the user-defined TWR limit.
+        //
+        // EARTHLIKE - [EARTHLIKE]
+        // Displays true/false indicating whether the ship can hover on an Earth-like planet
+        // (≈ 1.0g) at current mass and thrust.
+        //
+        // PERTRAM - [PERTRAM]
+        // Displays true/false indicating whether the ship can hover on Pertram
+        // (higher gravity than Earth-like).
+        //
+        // Light Arguments-----------------------------------------------------------------------
+        //
+        // ROTATING - [ROTATING]
+        // Marks a lighting block as a rotating / beacon-style light.
+        //
+        // Rotating lights are excluded from standard warning color logic and remain red unless
+        // explicitly overridden.
+        //
+        // --------------------------------------------------------------------------------------
 
 
-public string controlledBlockIdentifier = "<Cargo Vector>";
+        public string controlledBlockIdentifier = "<Cargo Vector>";
 // Name (or partial name) of the block this script controls.
 // Brackets <> are recommended because they make the name easy to target and
 // reduce accidental matches. If you remove brackets, be careful: this script
