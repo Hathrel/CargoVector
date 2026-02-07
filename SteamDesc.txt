@@ -1,0 +1,107 @@
+Introduction
+This script was designed primarily for logistics ships to determine if they're over
+filled, but can be used for any ship to determine if it is capable of going up and
+down in the gravity well.
+
+The panel portion is designed to be design friendly, so you
+can plan out how you want your screen to look in the Custom Data of the panels you
+use. This does necessarily mean that if another panel script doesn't just bowl over
+the rest of the text on the screen or nuke Custom Data, they can both occupy the same
+screen, but this is rare.
+
+If you point it at an LCD/cockpit surface that another script also uses,
+expect conflicts, as I can't control the behavior of their script, but this one
+does not hog the entire surface.
+
+User Config
+This script is designed to be driven entirely by Custom Data.
+
+The goal: you can name blocks however you want; config lives in Custom Data.
+
+PB Arguments
+1.) rescan - Type "rescan" in the arguments bar and click "Run" to immediately
+populate newly added screens. This doesn't HAVE to be done. The script default
+scans for new screens every ~30s.
+2.) speed - Type "speed" in the arguments bar and click "Run" to immediately
+change the update speed to a new value. Run this if you've changed the
+updateSpeed value.
+
+
+Custom Data Arguments
+
+Note: The following are case agnostic. As long as you spell them right, it will work.
+
+Panel Arguments
+
+TWR - [TWR]
+Displays current Thrust-to-Weight Ratio as a double.
+
+• TWR > 1.00 → Ship can climb.
+• TWR = 1.00 → Neutral hover (no vertical authority).
+• TWR < 1.00 → Ship will descend even at full thrust.
+
+This value is instantaneous and reflects current mass, gravity, and available thrust.
+
+ACCEL - [ACCEL]
+Displays NET vertical acceleration (m/s²) if full upward thrust is applied.
+
+• > 0 → You can arrest descent and climb.
+• = 0 → Neutral hover.
+• < 0 → You cannot stop falling; descent will accelerate.
+
+This is the *actual* braking capability metric.
+
+CANHOVER - [CANHOVER]
+Displays Yes/No indicating whether TWR ≥ 1.00. This metric is ONLY useful when designing a ship while physically already on the ground. It is a worthless flight metric. Do not rely on this.
+
+This is a convenience flag only and is NOT predictive.
+It does NOT indicate safe operation.
+
+STOPDIST - [STOPDIST]
+Displays estimated stopping distance (meters) required to null current
+velocity assuming full directional thrust.
+
+This value grows rapidly with speed and shrinking acceleration.
+Useful for intuition, not for envelope protection.
+
+BRAKEDIST - [BRAKEDIST]
+Displays braking feasibility relative to the current deck logic.
+
+Possible outputs include:
+• "BRAKE ALT: OK"
+• "BRAKE ALT: WARNING"
+• "BRAKE ALT: IMPOSSIBLE"
+
+This is a *diagnostic* display and should not be used for control decisions. This is highly likely to be reconfigured to be compare STOPDSIT from ALTDIST as an early warning predictor of imminent danger to your ship BEFORE you're trapped.
+
+ALTDIST - [ALTDIST]
+Displays altitude difference (meters) between current position and the relevant
+deck altitude.
+
+This is informational only and does not account for momentum or future authority loss.
+
+EARTHLIKE - [EARTHLIKE]
+Displays Yes/No indicating whether the ship can hover on an Earthlike planet
+(≈ 1.0g) at current mass and thrust.
+
+PERTRAM - [PERTRAM]
+Displays Yes/No indicating whether the ship can hover on Pertram
+(higher gravity than Earthlike at ≈ 1.2g).
+
+Light Arguments
+
+ROTATING - [ROTATING]
+Marks a lighting block as a rotating / beacon-style light.
+
+Rotating lights are excluded from standard warning color logic and remain red unless
+explicitly overridden.
+
+All of these are explained in the script, for easy reference, and all user defined variables are also explained in the script.
+
+Planned Features -
+
+- Progress Bar on how much more your cargo tanks can fill before your chosen TWR limit.
+- The ability to toggle fill behavior to stop more cargo going into your cargo containers (will come with ship design limitations)
+- Automatic thruster control to brake you before your chosen TWR limit, and prevent you from descending below that "deck"
+
+Please report bugs in the bug thread and I will address them as quickly as I can.
