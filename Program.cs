@@ -574,7 +574,8 @@ public string GetDeckBrakeStatusLine()
         return "ALT: N/A";
 
     double brakeAlt;
-    if (!TryGetBrakeAltitudeToOpsDeck(out brakeAlt))
+
+    if (!TryGetBrakeAltitudeToHardDeck(out brakeAlt))
         return "BRAKE ALT: N/A";
 
     if (double.IsInfinity(brakeAlt))
